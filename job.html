@@ -1,0 +1,296 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JobPortal Management System</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
+body{background:#f4f7fb;color:#1f2937}
+header{background:#01040a;color:white;padding:18px 6%;display:flex;justify-content:space-between;align-items:center}
+header h1{font-size:24px}
+nav button{background:none;border:0;color:white;margin-left:18px;cursor:pointer;font-size:15px}
+.container{width:88%;max-width:1200px;margin:28px auto}
+.page{display:none}.page.active{display:block}
+.hero{background:linear-gradient(135deg,#020202,#070708);color:white;padding:42px;border-radius:16px;margin-bottom:25px}
+.hero h2{font-size:32px;margin-bottom:10px}
+.hero p{margin-bottom:20px}
+.search{display:flex;gap:10px;flex-wrap:wrap}
+input,select,textarea{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:8px;background:white}
+.search input{flex:1;min-width:220px}
+button,.btn{background:#0b0c0c;color:white;border:0;padding:11px 18px;border-radius:8px;cursor:pointer}
+button:hover,.btn:hover{background:#050505}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:25px}
+.card{background:white;padding:20px;border-radius:12px;box-shadow:0 3px 12px #00000012}
+.card h3{font-size:14px;color:#6b7280;margin-bottom:8px}.card strong{font-size:26px}
+.jobs{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+.job-card{background:white;padding:20px;border-radius:12px;box-shadow:0 3px 12px #00000012}
+.job-card h3{margin-bottom:8px;color:#060606}.job-card p{margin:7px 0;color:#555}
+.tag{display:inline-block;background:#e8f1ff;color:#03060a;padding:5px 9px;border-radius:20px;font-size:12px;margin:5px 3px 10px 0}
+.form{background:white;padding:25px;border-radius:12px;max-width:650px;box-shadow:0 3px 12px #00000012}
+.form label{display:block;margin:14px 0 6px;font-weight:bold}
+.table-wrap{overflow:auto;background:white;border-radius:12px}
+table{width:100%;border-collapse:collapse}
+th,td{padding:13px;border-bottom:1px solid #e5e7eb;text-align:left}
+th{background:#eef4ff;color:#010101}
+.delete{background:#519564;padding:7px 12px}.delete:hover{background:#b91c1c}
+footer{text-align:center;padding:25px;color:#6b7280}
+@media(max-width:800px){.cards{grid-template-columns:repeat(2,1fr)}header{flex-direction:column;gap:12px}}
+@media(max-width:500px){.cards{grid-template-columns:1fr}.hero h2{font-size:25px}}
+
+.modal{display:none;position:fixed;inset:0;background:#0008;z-index:20;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:white;border-radius:14px;padding:25px;width:min(600px,100%);max-height:90vh;overflow:auto}
+.close{float:right;background:#6b7280}.close:hover{background:#4b5563}
+.status{padding:5px 9px;border-radius:15px;font-size:12px;background:#e8f5e9;color:#28733a}
+.profile{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.action-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.secondary{background:#87db95}.secondary:hover{background:#7de984}
+.favorite{background:#f59e0b}.favorite:hover{background:#d97706}
+.toast{position:fixed;right:20px;bottom:20px;background:#0b0b0c;color:white;padding:14px 18px;border-radius:10px;display:none;z-index:30}
+@media(max-width:600px){.profile{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>💼 JOBSPHERE</h1>
+  <nav>
+    <button onclick="showPage('home')">Home</button>
+    <button onclick="showPage('jobs')">Jobs</button>
+    <button onclick="showPage('post')">Post Job</button>
+    <button onclick="showPage('dashboard')">Dashboard</button>
+    <button onclick="showPage('applications')">Applications</button>
+    <button onclick="showPage('profile')">Profile</button>
+  </nav>
+</header>
+
+<main class="container">
+
+<section id="home" class="page active">
+  <div class="hero">
+    <h2>Find Your Dream Job</h2>
+    <p>Search jobs, apply to opportunities, and manage your applications.</p>
+    <div class="search">
+      <input id="homeSearch" placeholder="Search by job title or company">
+      <button onclick="searchJobs()">Search Jobs</button>
+    </div>
+  </div>
+
+  <h2>Featured Jobs</h2><br>
+  <div id="featuredJobs" class="jobs"></div>
+</section>
+
+<section id="jobs" class="page">
+  <h2>Available Jobs</h2><br>
+  <div class="search">
+    <input id="jobSearch" placeholder="Search jobs">
+    <select id="categoryFilter" onchange="renderJobs()">
+      <option value="">All Categories</option>
+      <option>IT</option><option>Marketing</option><option>Finance</option>
+      <option>Design</option><option>HR</option>
+    </select>
+    <button onclick="renderJobs()">Filter</button>
+  </div><br>
+  <div id="jobList" class="jobs"></div>
+</section>
+
+<section id="post" class="page">
+  <h2>Post a New Job</h2><br>
+  <div class="form">
+    <label>Job Title</label><input id="title" placeholder="e.g. Web Developer">
+    <label>Company</label><input id="company" placeholder="Company name">
+    <label>Location</label><input id="location" placeholder="e.g. Bengaluru">
+    <label>Category</label>
+    <select id="category"><option>IT</option><option>Marketing</option><option>Finance</option><option>Design</option><option>HR</option></select>
+    <label>Salary</label><input id="salary" placeholder="e.g. ₹4-6 LPA">
+    <label>Job Description</label><textarea id="description" rows="5" placeholder="Enter job description"></textarea>
+    <br><br><button onclick="addJob()">Add Job</button>
+  </div>
+</section>
+
+<section id="dashboard" class="page">
+  <h2>Management Dashboard</h2><br>
+  <div class="cards">
+    <div class="card"><h3>Total Jobs</h3><strong id="totalJobs">0</strong></div>
+    <div class="card"><h3>Total Applications</h3><strong id="totalApps">0</strong></div>
+    <div class="card"><h3>Companies</h3><strong id="totalCompanies">0</strong></div>
+    <div class="card"><h3>Categories</h3><strong id="totalCategories">0</strong></div>
+  </div>
+  <h3>Manage Posted Jobs</h3><br>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Job</th><th>Company</th><th>Category</th><th>Applications</th><th>Action</th></tr></thead>
+      <tbody id="manageTable"></tbody>
+    </table>
+  </div>
+</section>
+
+
+<section id="applications" class="page">
+  <h2>My Applications</h2><br>
+  <div id="applicationList" class="jobs"></div>
+</section>
+
+<section id="profile" class="page">
+  <h2>Candidate Profile</h2><br>
+  <div class="form">
+    <div class="profile">
+      <div><label>Full Name</label><input id="profileName" placeholder="Your name"></div>
+      <div><label>Email</label><input id="profileEmail" type="email" placeholder="your@email.com"></div>
+      <div><label>Phone</label><input id="profilePhone" placeholder="Phone number"></div>
+      <div><label>Skills</label><input id="profileSkills" placeholder="HTML, CSS, JavaScript"></div>
+    </div>
+    <label>Education</label><input id="profileEducation" placeholder="BCA / MCA / Degree">
+    <label>Resume Link</label><input id="profileResume" placeholder="Paste resume link">
+    <br><br><button onclick="saveProfile()">Save Profile</button>
+  </div>
+</section>
+
+<div id="detailsModal" class="modal">
+  <div class="modal-box">
+    <button class="close" onclick="closeModal()">Close</button>
+    <div id="detailsContent"></div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+</main>
+
+<footer>© 2026 JOBSPHERE | HTML, CSS & JavaScript</footer>
+
+<script>
+let jobs = JSON.parse(localStorage.getItem("jobs")) || [
+ {id:1,title:"Frontend Developer",company:"Tech Solutions",location:"Bengaluru",category:"IT",salary:"₹4-7 LPA",description:"Build responsive web applications.",applications:3},
+ {id:2,title:"Digital Marketing Executive",company:"Growth Media",location:"Hyderabad",category:"Marketing",salary:"₹3-5 LPA",description:"Manage digital marketing campaigns.",applications:5},
+ {id:3,title:"UI/UX Designer",company:"Creative Studio",location:"Pune",category:"Design",salary:"₹4-6 LPA",description:"Design modern and user-friendly interfaces.",applications:2}
+];
+
+function save(){localStorage.setItem("jobs",JSON.stringify(jobs))}
+function showPage(id){
+ document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+ document.getElementById(id).classList.add("active");
+ if(id==="jobs") renderJobs();
+ if(id==="dashboard") renderDashboard();
+ if(id==="home") renderFeatured();
+ if(id==="applications") renderApplications();
+ if(id==="profile") loadProfile();
+}
+function jobHTML(j){
+ return `<div class="job-card">
+   <h3>${escapeHTML(j.title)}</h3>
+   <p><b>Company:</b> ${escapeHTML(j.company)}</p>
+   <p>📍 ${escapeHTML(j.location)}</p>
+   <p>💰 ${escapeHTML(j.salary)}</p>
+   <span class="tag">${escapeHTML(j.category)}</span>
+   <span class="status">${j.applications} applicant(s)</span>
+   <p>${escapeHTML(j.description)}</p>
+   <div class="action-row">
+     <button onclick="applyJob(${j.id})">Apply Now</button>
+     <button class="secondary" onclick="viewDetails(${j.id})">View Details</button>
+     <button class="favorite" onclick="toggleFavorite(${j.id})">${isFavorite(j.id)?"★ Saved":"☆ Save"}</button>
+   </div>
+ </div>`;
+}
+function renderFeatured(){document.getElementById("featuredJobs").innerHTML=jobs.slice(0,3).map(jobHTML).join("")}
+function renderJobs(){
+ let q=(document.getElementById("jobSearch").value||"").toLowerCase();
+ let cat=document.getElementById("categoryFilter").value;
+ let result=jobs.filter(j=>(j.title+j.company+j.location).toLowerCase().includes(q)&&(!cat||j.category===cat));
+ document.getElementById("jobList").innerHTML=result.length?result.map(jobHTML).join(""):"<p>No jobs found.</p>";
+}
+function searchJobs(){
+ document.getElementById("jobSearch").value=document.getElementById("homeSearch").value;
+ showPage("jobs"); renderJobs();
+}
+function addJob(){
+ let title=document.getElementById("title").value.trim(), company=document.getElementById("company").value.trim();
+ let location=document.getElementById("location").value.trim(), salary=document.getElementById("salary").value.trim();
+ let description=document.getElementById("description").value.trim(), category=document.getElementById("category").value;
+ if(!title||!company||!location||!salary||!description){alert("Please fill all fields.");return}
+ jobs.push({id:Date.now(),title,company,location,category,salary,description,applications:0});
+ save(); alert("Job added successfully!"); document.querySelectorAll("#post input,#post textarea").forEach(x=>x.value="");
+ renderDashboard(); renderFeatured(); showPage("jobs");
+}
+function deleteJob(id){
+ if(confirm("Delete this job?")){jobs=jobs.filter(j=>j.id!==id);save();renderDashboard();renderJobs();renderFeatured();}
+}
+function renderDashboard(){
+ document.getElementById("totalJobs").textContent=jobs.length;
+ document.getElementById("totalApps").textContent=jobs.reduce((s,j)=>s+j.applications,0);
+ document.getElementById("totalCompanies").textContent=new Set(jobs.map(j=>j.company)).size;
+ document.getElementById("totalCategories").textContent=new Set(jobs.map(j=>j.category)).size;
+ document.getElementById("manageTable").innerHTML=jobs.map(j=>`<tr>
+   <td>${escapeHTML(j.title)}</td><td>${escapeHTML(j.company)}</td><td>${escapeHTML(j.category)}</td>
+   <td>${j.applications}</td><td><button class="delete" onclick="deleteJob(${j.id})">Delete</button></td>
+ </tr>`).join("");
+}
+
+function getApplications(){return JSON.parse(localStorage.getItem("applications")||"[]")}
+function saveApplications(a){localStorage.setItem("applications",JSON.stringify(a))}
+function isFavorite(id){return (JSON.parse(localStorage.getItem("favorites")||"[]")).includes(id)}
+function toggleFavorite(id){
+ let f=JSON.parse(localStorage.getItem("favorites")||"[]");
+ f=f.includes(id)?f.filter(x=>x!==id):[...f,id];
+ localStorage.setItem("favorites",JSON.stringify(f));
+ showToast(f.includes(id)?"Job saved to favorites":"Removed from favorites");
+ renderJobs(); renderFeatured();
+}
+function applyJob(id){
+ let j=jobs.find(x=>x.id===id);
+ if(!j)return;
+ let apps=getApplications();
+ if(apps.some(a=>a.jobId===id)){showToast("You have already applied for this job.");return}
+ if(!localStorage.getItem("profile")){alert("Please create your profile before applying.");showPage("profile");return}
+ j.applications++;
+ apps.push({jobId:id,status:"Applied",date:new Date().toLocaleDateString()});
+ save(); saveApplications(apps);
+ showToast("Application submitted successfully!");
+ renderJobs(); renderDashboard(); renderApplications();
+}
+function renderApplications(){
+ let apps=getApplications();
+ document.getElementById("applicationList").innerHTML=apps.length?apps.map(a=>{
+   let j=jobs.find(x=>x.id===a.jobId);
+   if(!j)return "";
+   return `<div class="job-card"><h3>${escapeHTML(j.title)}</h3>
+   <p><b>Company:</b> ${escapeHTML(j.company)}</p>
+   <p>📅 Applied: ${a.date}</p><p>📌 Status: <span class="status">${a.status}</span></p>
+   <button class="secondary" onclick="withdrawApplication(${a.jobId})">Withdraw</button></div>`;
+ }).join(""):"<p>No applications yet. Apply for a job to see it here.</p>";
+}
+function withdrawApplication(id){
+ if(!confirm("Withdraw this application?"))return;
+ let apps=getApplications().filter(a=>a.jobId!==id);
+ saveApplications(apps);
+ let j=jobs.find(x=>x.id===id); if(j&&j.applications>0)j.applications--;
+ save(); renderApplications(); renderDashboard(); renderJobs(); showToast("Application withdrawn.");
+}
+function viewDetails(id){
+ let j=jobs.find(x=>x.id===id); if(!j)return;
+ document.getElementById("detailsContent").innerHTML=`<h2>${escapeHTML(j.title)}</h2>
+ <p><b>Company:</b> ${escapeHTML(j.company)}</p><p><b>Location:</b> ${escapeHTML(j.location)}</p>
+ <p><b>Category:</b> ${escapeHTML(j.category)}</p><p><b>Salary:</b> ${escapeHTML(j.salary)}</p>
+ <hr style="margin:15px 0"><p>${escapeHTML(j.description)}</p><br>
+ <button onclick="closeModal();applyJob(${j.id})">Apply Now</button>`;
+ document.getElementById("detailsModal").style.display="flex";
+}
+function closeModal(){document.getElementById("detailsModal").style.display="none"}
+function showToast(msg){
+ let t=document.getElementById("toast");t.textContent=msg;t.style.display="block";
+ setTimeout(()=>t.style.display="none",2500);
+}
+function saveProfile(){
+ let p={name:profileName.value,email:profileEmail.value,phone:profilePhone.value,skills:profileSkills.value,education:profileEducation.value,resume:profileResume.value};
+ if(!p.name||!p.email){alert("Name and email are required.");return}
+ localStorage.setItem("profile",JSON.stringify(p));showToast("Profile saved successfully!");
+}
+function loadProfile(){
+ let p=JSON.parse(localStorage.getItem("profile")||"{}");
+ profileName.value=p.name||"";profileEmail.value=p.email||"";profilePhone.value=p.phone||"";
+ profileSkills.value=p.skills||"";profileEducation.value=p.education||"";profileResume.value=p.resume||"";
+}
+function escapeHTML(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+renderFeatured(); renderDashboard(); renderApplications(); loadProfile();
+</script>
+</body>
+</html>
